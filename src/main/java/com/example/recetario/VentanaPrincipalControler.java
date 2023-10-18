@@ -2,6 +2,8 @@ package com.example.recetario;
 
 import com.example.recetario.models.Receta;
 import javafx.beans.property.SimpleStringProperty;
+import javafx.beans.value.ChangeListener;
+import javafx.beans.value.ObservableValue;
 import javafx.event.ActionEvent;
 import javafx.event.Event;
 import javafx.fxml.FXML;
@@ -24,7 +26,7 @@ public class VentanaPrincipalControler implements Initializable {
     @FXML
     private Slider sliderDuracion;
     @FXML
-    private ComboBox comboDificultad;
+    private ComboBox<String> comboDificultad;
     @FXML
     private ListView<String> listTipo;
     @FXML
@@ -46,13 +48,23 @@ public class VentanaPrincipalControler implements Initializable {
     @FXML
     public void insertarReceta(ActionEvent actionEvent) {
 
+        if(!txtNombre.getText().isEmpty()){
+            Receta receta = new Receta();
+            receta.setNombre(txtNombre.getText());
+            receta.setTipo(listTipo.getSelectionModel().getSelectedItem());
+            receta.setDuracion((int) sliderDuracion.getValue());
+            receta.setDificultad(comboDificultad.getSelectionModel().getSelectedItem());
+            tabla.getItems().add(receta);
+            info.setText(receta.toString());
+        }
+
     }
 
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
 
         comboDificultad.getItems().add("Fácil");
-        comboDificultad.getItems().add("Medio");
+        comboDificultad.getItems().add("Moderada");
         comboDificultad.getItems().add("Difícil");
 
         //comboDificultad.getItems().addAll("Fácil","Medio","Dificil");
@@ -72,6 +84,23 @@ public class VentanaPrincipalControler implements Initializable {
         listTipo.getItems().addAll("Desayuno","Segundo desayuno","Almuerzo","Sobrealmurezo","Merienda","Cena","Recena","Postcena");
         listTipo.getSelectionModel().selectFirst();
 
+
+        //cuando localizo una propiedad, le puedo añadir un listener
+        sliderDuracion.valueProperty().addListener((observableValue, number, t1) -> labelDuracion.setText(t1.intValue() + " min"));
+
+        //txtNombre.textProperty().addListener((ob,vold,vnew)->info.setText("Antiguo: "+vold+" Nuevo: "+vnew));
+
+        //cuando se hace click en una fila de la tabla
+        tabla.getSelectionModel().selectedItemProperty().addListener(
+                (observable, vOld, vNew)->{
+                    info.setText(vNew.toString());
+                    txtNombre.setText(vNew.getNombre());
+                    sliderDuracion.setValue(vNew.getDuracion());
+                    listTipo.getSelectionModel().select(vNew.getTipo());
+                    comboDificultad.getSelectionModel().select(vNew.getDificultad());
+                }
+        );
+
         cNombre.setCellValueFactory((fila)-> {
             String nombre = fila.getValue().getNombre();
             return new SimpleStringProperty(nombre);
@@ -80,7 +109,7 @@ public class VentanaPrincipalControler implements Initializable {
         cDificultad.setCellValueFactory((fila)-> new SimpleStringProperty(fila.getValue().getDificultad()));
 
         cDuracion.setCellValueFactory((fila)-> {
-            String duracion = fila.getValue().getDuracion().toString();
+            String duracion = fila.getValue().getDuracion().toString()+" min";
             return new SimpleStringProperty(duracion);
         });
 
@@ -101,7 +130,8 @@ public class VentanaPrincipalControler implements Initializable {
 
     @FXML
     public void actualizarDuracion(Event event) {
-        labelDuracion.setText(Math.round(sliderDuracion.getValue()) + " min");
+        //labelDuracion.setText(Math.round(sliderDuracion.getValue()) + " min");
+
     }
 
 
