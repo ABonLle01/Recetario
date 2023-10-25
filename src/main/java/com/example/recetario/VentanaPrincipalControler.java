@@ -4,6 +4,8 @@ import com.example.recetario.models.Receta;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
 import javafx.event.Event;
 import javafx.fxml.FXML;
@@ -15,8 +17,10 @@ import javafx.scene.media.Media;
 import javafx.scene.media.MediaPlayer;
 import javafx.util.Duration;
 import javafx.util.StringConverter;
+import javafx.util.converter.PercentageStringConverter;
 
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.ResourceBundle;
 
 
@@ -62,24 +66,33 @@ public class VentanaPrincipalControler implements Initializable {
 
     private MediaPlayer mediaPlayer;
 
-    @FXML
-    public void insertarReceta(ActionEvent actionEvent) {
+    //un observable list es como un arrayList pero con mas capacidad
+    private ObservableList<Receta> recetas = FXCollections.observableArrayList();
 
-        if(!txtNombre.getText().isEmpty()){
-            Receta receta = new Receta();
-            receta.setNombre(txtNombre.getText());
-            receta.setTipo(listTipo.getSelectionModel().getSelectedItem());
-            receta.setDuracion((int) sliderDuracion.getValue());
-            receta.setDificultad(comboDificultad.getSelectionModel().getSelectedItem());
-            tabla.getItems().add(receta);
-            info.setText(receta.toString());
-        }
 
-    }
+
 
     //valores iniciales y configuraciones de la ventana
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
+
+        if(Session.getRecetas().isEmpty()){
+            ArrayList<Receta> temp = new ArrayList<>();
+            temp.add(new Receta("Tacos de carne asada", "Almuerzo", 45, "Fácil"));
+            temp.add(new Receta("Huevos revueltos con tocino", "Desayuno", 15, "Moderada"));
+            temp.add(new Receta("Sándwich de jamón y queso", "Merienda", 10, "Fácil"));
+            temp.add(new Receta("Pollo a la parrilla con verduras", "Almuerzo", 60, "Moderada"));
+            temp.add(new Receta("Avena con frutas", "Desayuno", 20, "Fácil"));
+            temp.add(new Receta("Ensalada de atún", "Almuerzo", 30, "Moderada"));
+            temp.add(new Receta("Pizza casera", "Cena", 35, "Moderada"));
+            temp.add(new Receta("Batido de frutas", "Merienda", 5, "Fácil"));
+            temp.add(new Receta("Sopa de pollo casera", "Cena", 40, "Difícil"));
+            temp.add(new Receta("Pancakes con sirope de arce", "Desayuno", 25, "Moderada"));
+            Session.setRecetas(temp);
+        }
+        recetas.addAll(Session.getRecetas());
+
+
 
         Media sonido = new Media(HelloApplication.class.getClassLoader().getResource("com/example/recetario/audio" +
                 "/clic.wav").toExternalForm());
@@ -90,14 +103,6 @@ public class VentanaPrincipalControler implements Initializable {
         comboDificultad.getItems().add("Difícil");
 
         //comboDificultad.getItems().addAll("Fácil","Medio","Dificil");
-
-
-        //un observable list es como un arrayList pero con mas capacidad
-        /*
-        ObservableList<String> datos = FXCollections.observableArrayList();
-        datos.addAll("","");
-        comboDificultad.setItems(datos);
-        */
 
         comboDificultad.getSelectionModel().selectFirst();
 
@@ -156,16 +161,15 @@ public class VentanaPrincipalControler implements Initializable {
 
         cTipo.setCellValueFactory((fila)-> new SimpleStringProperty(fila.getValue().getTipo()));
 
-        tabla.getItems().add(new Receta("Tacos de carne asada", "Almuerzo", 45, "Fácil"));
-        tabla.getItems().add(new Receta("Huevos revueltos con tocino", "Desayuno", 15, "Moderada"));
-        tabla.getItems().add(new Receta("Sándwich de jamón y queso", "Merienda", 10, "Fácil"));
-        tabla.getItems().add(new Receta("Pollo a la parrilla con verduras", "Almuerzo", 60, "Moderada"));
-        tabla.getItems().add(new Receta("Avena con frutas", "Desayuno", 20, "Fácil"));
-        tabla.getItems().add(new Receta("Ensalada de atún", "Almuerzo", 30, "Moderada"));
-        tabla.getItems().add(new Receta("Pizza casera", "Cena", 35, "Moderada"));
-        tabla.getItems().add(new Receta("Batido de frutas", "Merienda", 5, "Fácil"));
-        tabla.getItems().add(new Receta("Sopa de pollo casera", "Cena", 40, "Difícil"));
-        tabla.getItems().add(new Receta("Pancakes con sirope de arce", "Desayuno", 25, "Moderada"));
+        tabla.getSelectionModel().selectedItemProperty().addListener(
+                (observable, vOld, vNew)->{
+                    seleccionarReceta(tabla.getSelectionModel().getSelectedItem());
+
+                }
+        );
+
+        tabla.setItems(recetas);
+
 
         comboRecetas.setConverter(new StringConverter<Receta>() {
             @Override
@@ -180,10 +184,12 @@ public class VentanaPrincipalControler implements Initializable {
             }
         });
 
-        comboRecetas.getItems().addAll(tabla.getItems());
+        comboRecetas.setItems(recetas);
 
 
     }
+
+
 
     @FXML
     public void actualizarDuracion(Event event) {
@@ -207,10 +213,33 @@ public class VentanaPrincipalControler implements Initializable {
 
     @FXML
     public void mostrarReceta(ActionEvent actionEvent) {
-        System.out.println(comboRecetas.getSelectionModel().getSelectedItem());
+        seleccionarReceta(comboRecetas.getSelectionModel().getSelectedItem());
+    }
 
-        Session.setRecetaActual(comboRecetas.getSelectionModel().getSelectedItem());
+    private void seleccionarReceta(Receta r) {
+        System.out.println(r);
+
+        Session.setRecetaActual(r);
+        Session.setPos(tabla.getSelectionModel().getSelectedIndex());
 
         HelloApplication.loadFXML("ventanaSecundaria.fxml");
+    }
+
+    @FXML
+    public void insertarReceta(ActionEvent actionEvent) {
+
+        if(!txtNombre.getText().isEmpty()){
+            Receta receta = new Receta();
+            receta.setNombre(txtNombre.getText());
+            receta.setTipo(listTipo.getSelectionModel().getSelectedItem());
+            receta.setDuracion((int) sliderDuracion.getValue());
+            receta.setDificultad(comboDificultad.getSelectionModel().getSelectedItem());
+
+            Session.getRecetas().add(receta);
+            recetas.add(receta);
+
+            info.setText(receta.toString());
+        }
+
     }
 }
